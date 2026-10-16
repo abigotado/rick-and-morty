@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:characters_domain/characters_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:rick_and_morty/core/pagination/infinite_scroll_mixin.dart';
 import 'package:rick_and_morty/core/widgets/entrance.dart';
 import 'package:rick_and_morty/features/characters/list/bloc/characters_bloc.dart';
@@ -37,6 +39,12 @@ class _CharacterListViewState extends State<CharacterListView>
     _searchController.dispose();
     _entrance.dispose();
     super.dispose();
+  }
+
+  void _openDetails(CharacterEntity character) {
+    final focus = FocusManager.instance.primaryFocus;
+    if (focus?.context?.findAncestorWidgetOfExactType<EditableText>() != null) focus!.unfocus();
+    context.go('/character/${character.id}', extra: character);
   }
 
   void _clearSearch() {
@@ -84,6 +92,7 @@ class _CharacterListViewState extends State<CharacterListView>
                   state: state,
                   entrance: _entrance,
                   onClearSearch: _clearSearch,
+                  onCharacterTap: _openDetails,
                 ),
               ),
             ],

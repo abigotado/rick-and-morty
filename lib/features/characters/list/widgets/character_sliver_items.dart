@@ -8,12 +8,14 @@ class CharacterSliverItems extends StatelessWidget {
   const CharacterSliverItems({
     required this.characters,
     required this.entrance,
+    required this.onCharacterTap,
     this.query = '',
     super.key,
   });
 
   final List<CharacterEntity> characters;
   final Animation<double> entrance;
+  final ValueChanged<CharacterEntity> onCharacterTap;
   final String query;
 
   static const gridBreakpoint = 600.0;
@@ -41,7 +43,11 @@ class CharacterSliverItems extends StatelessWidget {
               key: ValueKey(character.id),
               animation: entrance,
               index: index,
-              child: CharacterCard(character: character, query: query),
+              child: CharacterCard(
+                character: character,
+                query: query,
+                onTap: () => onCharacterTap(character),
+              ),
             );
           },
         ),
@@ -58,7 +64,11 @@ class CharacterSliverItems extends StatelessWidget {
             key: ValueKey(character.id),
             animation: entrance,
             index: index,
-            child: CharacterTile(character: character, query: query),
+            child: CharacterTile(
+              character: character,
+              query: query,
+              onTap: () => onCharacterTap(character),
+            ),
           );
         },
       ),

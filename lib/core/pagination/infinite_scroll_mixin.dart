@@ -28,6 +28,7 @@ mixin InfiniteScrollMixin<T extends StatefulWidget> on State<T> {
   }
 
   void scheduleLoadMoreCheck() {
+    if (scrollController.hasClients && !scrollController.position.hasContentDimensions) return;
     WidgetsBinding.instance
       ..addPostFrameCallback((_) => _loadMoreIfNearEnd())
       ..ensureVisualUpdate();
@@ -39,7 +40,12 @@ mixin InfiniteScrollMixin<T extends StatefulWidget> on State<T> {
   }
 
   void _loadMoreIfNearEnd() {
-    if (!mounted || !scrollController.hasClients || !canLoadMore) return;
+    if (!mounted || !_isLaidOut || !canLoadMore) return;
     if (scrollController.position.extentAfter < loadMoreThreshold) onLoadMore();
   }
+
+  // A scroll view under an opaque route (the list beneath a deep-linked details page) is attached
+  // but never laid out, so its position has no extents until the route above is popped.
+  bool get _isLaidOut =>
+      scrollController.hasClients && scrollController.position.hasContentDimensions;
 }

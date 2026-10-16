@@ -1,7 +1,11 @@
+import 'dart:ui' as ui;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rick_and_morty/features/characters/widgets/character_image.dart';
+
+import '../../../helpers/image_cache.dart';
 
 void main() {
   group('CharacterImage', () {
@@ -14,6 +18,7 @@ void main() {
       double devicePixelRatio = 3,
       String? semanticLabel,
       double? decodeExtent,
+      double? previewExtent,
     }) {
       tester.view.devicePixelRatio = devicePixelRatio;
       addTearDown(tester.view.resetDevicePixelRatio);
@@ -26,6 +31,7 @@ void main() {
                 url: url,
                 semanticLabel: semanticLabel,
                 decodeExtent: decodeExtent,
+                previewExtent: previewExtent,
               ),
             ),
           ),
@@ -34,7 +40,10 @@ void main() {
     }
 
     CachedNetworkImage networkImage(WidgetTester tester) =>
-        tester.widget<CachedNetworkImage>(find.byType(CachedNetworkImage));
+        tester.widget<CachedNetworkImage>(find.byType(CachedNetworkImage).first);
+
+    ui.Image? shownImage(WidgetTester tester) =>
+        tester.widget<RawImage>(find.byType(RawImage)).image;
 
     group('build', () {
       testWidgets('url null → broken image icon and no network image', (tester) async {
@@ -76,6 +85,34 @@ void main() {
         await pumpImage(tester, url: avatarUrl, decodeExtent: 72, size: const Size(73, 73));
 
         expect(networkImage(tester).memCacheWidth, before);
+      });
+
+      testWidgets('previewExtent set, full size not loaded → cached preview shown meanwhile', (
+        tester,
+      ) async {
+        final preview = await seedCachedImage(tester, avatarUrl, cacheWidth: 72);
+
+        await pumpImage(tester, url: avatarUrl, previewExtent: 24);
+
+        expect(networkImage(tester).memCacheWidth, isNull);
+        expect(shownImage(tester)!.isCloneOf(preview), isTrue);
+      });
+
+      testWidgets('previewExtent set, full size cached → full size shown', (tester) async {
+        final full = await seedCachedImage(tester, avatarUrl);
+        await seedCachedImage(tester, avatarUrl, cacheWidth: 72);
+
+        await pumpImage(tester, url: avatarUrl, previewExtent: 24);
+
+        expect(shownImage(tester)!.isCloneOf(full), isTrue);
+      });
+
+      testWidgets('no previewExtent, full size not loaded → blank placeholder', (tester) async {
+        await seedCachedImage(tester, avatarUrl, cacheWidth: 72);
+
+        await pumpImage(tester, url: avatarUrl);
+
+        expect(find.byType(RawImage), findsNothing);
       });
 
       testWidgets('semanticLabel set → labelled image semantics', (tester) async {

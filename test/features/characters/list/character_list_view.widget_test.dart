@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:characters_domain/characters_domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -558,7 +559,9 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('tile → read as name, status and species, not as an image', (tester) async {
+      testWidgets('tile → one button read as name, status and species, not as an image', (
+        tester,
+      ) async {
         final handle = tester.ensureSemantics();
         await pumpView(tester, successState(characters: [rick]));
 
@@ -566,6 +569,8 @@ void main() {
 
         expect(semantics.label, 'Rick Sanchez\nStatus: Alive\nHuman');
         expect(semantics.flagsCollection.isImage, isFalse);
+        expect(semantics.flagsCollection.isButton, isTrue);
+        expect(semantics.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
         handle.dispose();
       });
 

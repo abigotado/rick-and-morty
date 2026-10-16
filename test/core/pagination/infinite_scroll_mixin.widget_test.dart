@@ -187,6 +187,67 @@ void main() {
       });
     });
 
+    group('under an opaque route', () {
+      Future<void> pumpBehindRoute(
+        WidgetTester tester, {
+        required int itemCount,
+        bool covered = true,
+      }) {
+        tester.view
+          ..devicePixelRatio = 1
+          ..physicalSize = const Size(400, 600);
+        addTearDown(tester.view.reset);
+        return tester.pumpWidget(
+          MaterialApp(
+            home: Navigator(
+              pages: [
+                MaterialPage<void>(
+                  key: const ValueKey('feed'),
+                  child: _Feed(
+                    itemCount: itemCount,
+                    onLoadMore: countLoadMore,
+                    listensToMetrics: true,
+                  ),
+                ),
+                if (covered)
+                  const MaterialPage<void>(
+                    key: ValueKey('top'),
+                    child: Scaffold(body: Text('Top')),
+                  ),
+              ],
+              onDidRemovePage: (page) {},
+            ),
+          ),
+        );
+      }
+
+      testWidgets('never laid out, items arrive → no throw and no onLoadMore', (tester) async {
+        await pumpBehindRoute(tester, itemCount: 3);
+        await tester.pump();
+
+        await pumpBehindRoute(tester, itemCount: 5);
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        final feed = tester.state<_FeedState>(find.byType(_Feed, skipOffstage: false));
+        expect(feed.scrollController.position.hasContentDimensions, isFalse);
+        expect(loadMoreCalls, 0);
+      });
+
+      testWidgets('route above removed, short content laid out → onLoadMore', (tester) async {
+        await pumpBehindRoute(tester, itemCount: 3);
+        await pumpBehindRoute(tester, itemCount: 5);
+        await tester.pump();
+        expect(loadMoreCalls, 0);
+
+        await pumpBehindRoute(tester, itemCount: 5, covered: false);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(loadMoreCalls, greaterThan(0));
+      });
+    });
+
     group('dispose', () {
       testWidgets('state unmounted → scrollController disposed', (tester) async {
         await pumpFeed(tester, itemCount: 30);

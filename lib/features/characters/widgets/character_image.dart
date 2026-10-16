@@ -7,6 +7,7 @@ class CharacterImage extends StatelessWidget {
     this.borderRadius = BorderRadius.zero,
     this.semanticLabel,
     this.decodeExtent,
+    this.previewExtent,
     super.key,
   });
 
@@ -17,6 +18,10 @@ class CharacterImage extends StatelessWidget {
   /// Logical size to decode the square avatar at; null keeps the source size.
   final double? decodeExtent;
 
+  /// Decode extent of a smaller rendition, usually already in memory, shown while this one
+  /// loads instead of the blank placeholder.
+  final double? previewExtent;
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -26,20 +31,44 @@ class CharacterImage extends StatelessWidget {
       child: ClipRRect(
         borderRadius: borderRadius,
         child: switch (url) {
-          final url? => CachedNetworkImage(
-            imageUrl: url.toString(),
-            fit: BoxFit.cover,
-            memCacheWidth: switch (decodeExtent) {
-              final extent? => (extent * MediaQuery.devicePixelRatioOf(context)).ceil(),
-              null => null,
+          final url? => _CachedImage(
+            url: url,
+            decodeExtent: decodeExtent,
+            placeholder: switch (previewExtent) {
+              final extent? => _CachedImage(
+                url: url,
+                decodeExtent: extent,
+                placeholder: const _ImagePlaceholder(),
+              ),
+              null => const _ImagePlaceholder(),
             },
-            fadeInDuration: const Duration(milliseconds: 200),
-            placeholder: (context, url) => const _ImagePlaceholder(),
-            errorWidget: (context, url, error) => const _ImagePlaceholder(failed: true),
           ),
           null => const _ImagePlaceholder(failed: true),
         },
       ),
+    );
+  }
+}
+
+class _CachedImage extends StatelessWidget {
+  const _CachedImage({required this.url, required this.decodeExtent, required this.placeholder});
+
+  final Uri url;
+  final double? decodeExtent;
+  final Widget placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    return CachedNetworkImage(
+      imageUrl: url.toString(),
+      fit: BoxFit.cover,
+      memCacheWidth: switch (decodeExtent) {
+        final extent? => (extent * MediaQuery.devicePixelRatioOf(context)).ceil(),
+        null => null,
+      },
+      fadeInDuration: const Duration(milliseconds: 200),
+      placeholder: (context, url) => placeholder,
+      errorWidget: (context, url, error) => const _ImagePlaceholder(failed: true),
     );
   }
 }

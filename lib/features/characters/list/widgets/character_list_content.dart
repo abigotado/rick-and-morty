@@ -1,3 +1,4 @@
+import 'package:characters_domain/characters_domain.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rick_and_morty/core/widgets/portal_illustration.dart';
@@ -13,12 +14,14 @@ class CharacterListContent extends StatelessWidget {
     required this.state,
     required this.entrance,
     required this.onClearSearch,
+    required this.onCharacterTap,
     super.key,
   });
 
   final CharactersState state;
   final Animation<double> entrance;
   final VoidCallback onClearSearch;
+  final ValueChanged<CharacterEntity> onCharacterTap;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +72,12 @@ class CharacterListContent extends StatelessWidget {
           top: false,
           sliver: SliverMainAxisGroup(
             slivers: [
-              CharacterSliverItems(characters: characters, query: query, entrance: entrance),
+              CharacterSliverItems(
+                characters: characters,
+                query: query,
+                entrance: entrance,
+                onCharacterTap: onCharacterTap,
+              ),
               if (hasMore) SliverToBoxAdapter(child: CharacterListFooter(status: nextPageStatus)),
             ],
           ),
