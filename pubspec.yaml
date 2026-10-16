@@ -8,12 +8,17 @@ environment:
   flutter: 3.44.8
 
 dependencies:
+  bloc_concurrency: ^0.3.0
+  cached_network_image: ^4.0.3
   dio: ^5.11.1
   equatable: ^3.0.0
   flutter:
     sdk: flutter
+  flutter_bloc: ^9.1.1
+  go_router: ^18.1.0
 
 dev_dependencies:
+  bloc_test: ^10.0.0
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.5
