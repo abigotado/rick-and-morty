@@ -7,6 +7,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rick_and_morty/app/theme.dart';
+import 'package:rick_and_morty/core/widgets/collapsing_header.dart';
+import 'package:rick_and_morty/core/widgets/entrance.dart';
+import 'package:rick_and_morty/core/widgets/highlighted_text.dart';
+import 'package:rick_and_morty/core/widgets/skeleton.dart';
 import 'package:rick_and_morty/features/characters/failure_message.dart';
 import 'package:rick_and_morty/features/characters/list/bloc/characters_bloc.dart';
 import 'package:rick_and_morty/features/characters/list/character_list_view.dart';
@@ -38,7 +42,7 @@ void main() {
     whenListen(bloc, states, initialState: state);
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.light,
+        theme: AppTheme.dark,
         home: BlocProvider<CharactersBloc>.value(
           value: bloc,
           child: const CharacterListView(),
@@ -51,24 +55,89 @@ void main() {
     List<CharacterEntity>? characters,
     int? nextPage,
     NextPageStatus nextPageStatus = NextPageStatus.idle,
+    String query = '',
+    int totalCount = 0,
   }) {
     return CharactersState(
       status: CharactersStatus.success,
       characters: characters ?? [buildCharacter(1), buildCharacter(2)],
+      query: query,
+      totalCount: totalCount,
       nextPage: nextPage,
       nextPageStatus: nextPageStatus,
     );
   }
 
+  String fieldText(WidgetTester tester) =>
+      tester.widget<TextField>(find.byType(TextField)).controller!.text;
+
   group('CharacterListView', () {
+    group('header caption', () {
+      final cases = <String, CharactersState>{
+        'Opening a portal…': const CharactersState(),
+        '826 across the multiverse': successState(totalCount: 826),
+        'No matches': successState(characters: const [], query: 'zzz'),
+        '1 match': successState(characters: [rick], query: 'rick sanchez', totalCount: 1),
+        '107 matches': successState(query: 'rick', totalCount: 107),
+      };
+      for (final MapEntry(key: caption, value: state) in cases.entries) {
+        testWidgets('${state.status.name} "${state.query}" → "$caption"', (tester) async {
+          await pumpView(tester, state);
+
+          expect(
+            find.descendant(of: find.byType(CollapsingHeader), matching: find.text(caption)),
+            findsOneWidget,
+          );
+        });
+      }
+
+      testWidgets('failure → no caption', (tester) async {
+        await pumpView(
+          tester,
+          const CharactersState(status: CharactersStatus.failure, failure: NetworkFailure()),
+        );
+
+        expect(
+          find.descendant(
+            of: find.byType(CollapsingHeader),
+            matching: find.textContaining(RegExp('portal|multiverse|match')),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('first page arrives → caption switches from loading to the count', (
+        tester,
+      ) async {
+        final states = StreamController<CharactersState>();
+        addTearDown(states.close);
+        await pumpView(
+          tester,
+          const CharactersState(status: CharactersStatus.loading),
+          states: states.stream,
+        );
+
+        states.add(successState(totalCount: 826));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('826 across the multiverse'), findsOneWidget);
+        expect(find.text('Opening a portal…'), findsNothing);
+      });
+    });
+
     group('loading', () {
       for (final status in [CharactersStatus.initial, CharactersStatus.loading]) {
-        testWidgets('${status.name} status → centered progress and no items', (tester) async {
+        testWidgets('${status.name} status → labelled skeleton and no items', (tester) async {
+          final handle = tester.ensureSemantics();
           await pumpView(tester, CharactersState(status: status));
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.bySemanticsLabel('Loading characters'), findsOneWidget);
+          expect(find.byType(SkeletonBox), findsWidgets);
           expect(find.byType(CharacterTile), findsNothing);
-          expect(find.text('Retry'), findsNothing);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+          expect(find.text('Try again'), findsNothing);
+          handle.dispose();
         });
       }
     });
@@ -79,30 +148,34 @@ void main() {
         ServerFailure(500),
         ServerFailure(429),
       ]) {
-        testWidgets('$failure → shows its message', (tester) async {
+        testWidgets('$failure → shows its title and message', (tester) async {
           await pumpView(
             tester,
             CharactersState(status: CharactersStatus.failure, failure: failure),
           );
 
+          expect(find.text(failure.title), findsOneWidget);
           expect(find.text(failure.message), findsOneWidget);
-          expect(find.byType(CircularProgressIndicator), findsNothing);
+          expect(find.byType(SkeletonBox), findsNothing);
+          expect(find.byType(CharacterTile), findsNothing);
         });
       }
 
-      testWidgets('failure without details → generic message', (tester) async {
+      testWidgets('failure without details → generic title', (tester) async {
         await pumpView(tester, const CharactersState(status: CharactersStatus.failure));
 
-        expect(find.text('Something went wrong.'), findsOneWidget);
+        expect(find.text('Something went wrong'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, 'Try again'), findsOneWidget);
       });
 
-      testWidgets('tap Retry → adds CharactersRetried', (tester) async {
+      testWidgets('tap Try again → adds CharactersRetried', (tester) async {
         await pumpView(
           tester,
           const CharactersState(status: CharactersStatus.failure, failure: NetworkFailure()),
         );
+        await tester.pump(const Duration(milliseconds: 200));
 
-        await tester.tap(find.text('Retry'));
+        await tester.tap(find.widgetWithText(FilledButton, 'Try again'));
 
         verify(() => bloc.add(const CharactersRetried())).called(1);
       });
@@ -114,7 +187,8 @@ void main() {
 
         expect(find.text('No characters found'), findsOneWidget);
         expect(find.byType(CharacterTile), findsNothing);
-        expect(find.text('Retry'), findsNothing);
+        expect(find.text('Clear search'), findsNothing);
+        expect(find.text('Try again'), findsNothing);
       });
 
       testWidgets('characters → names and status labels', (tester) async {
@@ -136,6 +210,60 @@ void main() {
         expect(find.text('Dead'), findsOneWidget);
         expect(find.text('Unknown'), findsOneWidget);
         expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
+
+      testWidgets('first page arrives → items fade in from transparent to opaque', (
+        tester,
+      ) async {
+        final states = StreamController<CharactersState>();
+        addTearDown(states.close);
+        await pumpView(
+          tester,
+          const CharactersState(status: CharactersStatus.loading),
+          states: states.stream,
+        );
+
+        states.add(successState());
+        await tester.pump();
+        await tester.pump();
+
+        double firstItemOpacity() => tester
+            .widget<Opacity>(
+              find
+                  .descendant(of: find.byType(StaggeredEntrance), matching: find.byType(Opacity))
+                  .first,
+            )
+            .opacity;
+        expect(firstItemOpacity(), lessThan(1));
+
+        await tester.pump(StaggeredEntrance.totalDuration);
+
+        expect(firstItemOpacity(), 1);
+      });
+
+      testWidgets('first page arrives with animations disabled → items opaque at once', (
+        tester,
+      ) async {
+        tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+          disableAnimations: true,
+        );
+        addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+        final states = StreamController<CharactersState>();
+        addTearDown(states.close);
+        await pumpView(
+          tester,
+          const CharactersState(status: CharactersStatus.loading),
+          states: states.stream,
+        );
+
+        states.add(successState());
+        await tester.pump();
+        await tester.pump();
+
+        final opacities = tester.widgetList<Opacity>(
+          find.descendant(of: find.byType(StaggeredEntrance), matching: find.byType(Opacity)),
+        );
+        expect(opacities.map((opacity) => opacity.opacity), everyElement(1));
       });
 
       testWidgets('no more pages → no footer', (tester) async {
@@ -177,6 +305,93 @@ void main() {
         await tester.tap(find.text('Retry'));
 
         verify(() => bloc.add(const CharactersRetried())).called(1);
+      });
+    });
+
+    group('search', () {
+      testWidgets('state with a query → search bar prefilled with it', (tester) async {
+        await pumpView(tester, successState(query: 'rick'));
+
+        expect(fieldText(tester), 'rick');
+      });
+
+      testWidgets('typing → adds CharactersQueryChanged with the text', (tester) async {
+        await pumpView(tester, successState());
+
+        await tester.enterText(find.byType(TextField), 'morty');
+
+        verify(() => bloc.add(const CharactersQueryChanged('morty'))).called(1);
+      });
+
+      testWidgets('empty result for a query → names the query and offers to clear it', (
+        tester,
+      ) async {
+        await pumpView(tester, successState(characters: const [], query: 'rick'));
+
+        expect(find.text('No one by that name'), findsOneWidget);
+        expect(find.textContaining('“rick”'), findsOneWidget);
+        expect(find.widgetWithText(OutlinedButton, 'Clear search'), findsOneWidget);
+        expect(find.text('No characters found'), findsNothing);
+      });
+
+      testWidgets('tap Clear search → field emptied and CharactersQueryChanged("") added', (
+        tester,
+      ) async {
+        await pumpView(tester, successState(characters: const [], query: 'rick'));
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(fieldText(tester), 'rick');
+
+        await tester.tap(find.widgetWithText(OutlinedButton, 'Clear search'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+
+        expect(fieldText(tester), isEmpty);
+        expect(find.byTooltip('Clear'), findsNothing);
+        verify(() => bloc.add(const CharactersQueryChanged(''))).called(1);
+      });
+
+      testWidgets('items for a query → each name highlights the query', (tester) async {
+        await pumpView(tester, successState(characters: [rick], query: 'sanch'));
+
+        final name = tester.widget<HighlightedText>(find.byType(HighlightedText));
+        expect(name.text, 'Rick Sanchez');
+        expect(name.highlight, 'sanch');
+      });
+
+      testWidgets('query changes → list jumps back to the top', (tester) async {
+        final states = StreamController<CharactersState>();
+        addTearDown(states.close);
+        final characters = List.generate(30, (index) => buildCharacter(index + 1));
+        await pumpView(tester, successState(characters: characters), states: states.stream);
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
+        await tester.pump();
+        final controller = tester
+            .widget<CustomScrollView>(find.byType(CustomScrollView))
+            .controller!;
+        expect(controller.offset, greaterThan(0));
+
+        states.add(successState(characters: characters, query: 'rick'));
+        await tester.pump();
+
+        expect(controller.offset, 0);
+      });
+
+      testWidgets('new items for the same query → scroll position kept', (tester) async {
+        final states = StreamController<CharactersState>();
+        addTearDown(states.close);
+        final characters = List.generate(30, (index) => buildCharacter(index + 1));
+        await pumpView(tester, successState(characters: characters), states: states.stream);
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -1000));
+        await tester.pump();
+        final controller = tester
+            .widget<CustomScrollView>(find.byType(CustomScrollView))
+            .controller!;
+        final offset = controller.offset;
+
+        states.add(successState(characters: [...characters, buildCharacter(31)]));
+        await tester.pump();
+
+        expect(controller.offset, offset);
       });
     });
 
@@ -228,7 +443,9 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        verify(() => bloc.add(const CharactersNextPageRequested())).called(1);
+        // Skeleton → short list fires both the post-frame check and a metrics change; the bloc
+        // drops the duplicate (see the bloc's "requested twice while loading" test).
+        verify(() => bloc.add(const CharactersNextPageRequested())).called(greaterThan(0));
       });
 
       testWidgets('appended page still does not fill the viewport → requests again', (
@@ -316,16 +533,38 @@ void main() {
         expect(find.byType(CharacterTile), findsNWidgets(2));
         expect(find.byType(CharacterCard), findsNothing);
       });
+
+      for (final (name, state, firstItem) in [
+        ('items', successState(), find.byType(CharacterCard)),
+        (
+          'skeleton',
+          const CharactersState(status: CharactersStatus.loading),
+          find.byType(SkeletonBox),
+        ),
+      ]) {
+        testWidgets('landscape with side insets → header and $name clear the notch', (
+          tester,
+        ) async {
+          await pumpView(tester, state, width: 852);
+          tester.view.padding = const FakeViewPadding(left: 59, right: 59);
+          await tester.pump();
+
+          const contentLeft = 59 + 16.0;
+          expect(tester.getRect(find.text('Characters')).left, contentLeft);
+          expect(tester.getRect(find.byType(SearchBar)).left, contentLeft);
+          expect(tester.getRect(firstItem.first).left, contentLeft);
+        });
+      }
     });
 
     group('accessibility', () {
-      testWidgets('tile → read as name and status, not as an image', (tester) async {
+      testWidgets('tile → read as name, status and species, not as an image', (tester) async {
         final handle = tester.ensureSemantics();
         await pumpView(tester, successState(characters: [rick]));
 
         final semantics = tester.getSemantics(find.byType(CharacterTile));
 
-        expect(semantics.label, 'Rick Sanchez\nStatus: Alive');
+        expect(semantics.label, 'Rick Sanchez\nStatus: Alive\nHuman');
         expect(semantics.flagsCollection.isImage, isFalse);
         handle.dispose();
       });

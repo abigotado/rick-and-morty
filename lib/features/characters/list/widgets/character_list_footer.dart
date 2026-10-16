@@ -9,14 +9,22 @@ class CharacterListFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: switch (status) {
         NextPageStatus.failure => Row(
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: 8,
           children: [
-            const Flexible(child: Text("Couldn't load more characters")),
+            Flexible(
+              child: Text(
+                "Couldn't load more characters",
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
             TextButton(
               onPressed: () => context.read<CharactersBloc>().add(const CharactersRetried()),
               child: const Text('Retry'),
@@ -24,7 +32,10 @@ class CharacterListFooter extends StatelessWidget {
           ],
         ),
         NextPageStatus.idle || NextPageStatus.loading => const Center(
-          child: CircularProgressIndicator(semanticsLabel: 'Loading more'),
+          child: SizedBox.square(
+            dimension: 28,
+            child: CircularProgressIndicator(strokeWidth: 3, semanticsLabel: 'Loading more'),
+          ),
         ),
       },
     );

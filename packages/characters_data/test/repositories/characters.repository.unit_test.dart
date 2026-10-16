@@ -36,7 +36,7 @@ void main() {
 
         expect(
           await repository.getCharacters(),
-          CharactersPageEntity(characters: [rick], nextPage: 2),
+          CharactersPageEntity(characters: [rick], totalCount: 826, nextPage: 2),
         );
       });
 

@@ -20,6 +20,7 @@ abstract final class CharacterMapper {
 
   static CharactersPageEntity toPageEntity(CharactersPageDTO dto) => CharactersPageEntity(
     characters: List.unmodifiable(dto.results.map(toEntity)),
+    totalCount: dto.info.count,
     nextPage: switch (dto.info.next) {
       final url? => _pageNumber(url),
       null => null,

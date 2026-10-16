@@ -23,12 +23,12 @@ void main() {
   });
 
   group('App', () {
-    testWidgets('uses light and dark themes', (tester) async {
+    testWidgets('dark-only design → dark theme and no separate light/dark pair', (tester) async {
       await tester.pumpWidget(App(charactersRepository: repository));
 
       final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(app.theme, AppTheme.light);
-      expect(app.darkTheme, AppTheme.dark);
+      expect(app.theme, AppTheme.dark);
+      expect(app.darkTheme, isNull);
     });
 
     testWidgets('opens on the character list and loads the first page', (tester) async {

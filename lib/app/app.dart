@@ -1,5 +1,6 @@
 import 'package:characters_domain/characters_domain.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:rick_and_morty/app/router.dart';
@@ -30,9 +31,12 @@ class _AppState extends State<App> {
       child: MaterialApp.router(
         title: 'Rick and Morty',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
+        theme: AppTheme.dark,
         routerConfig: _router,
+        builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     );
   }

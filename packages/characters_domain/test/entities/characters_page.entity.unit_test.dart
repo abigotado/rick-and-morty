@@ -6,8 +6,15 @@ void main() {
     group('==', () {
       test('different nextPage → not equal', () {
         expect(
-          const CharactersPageEntity(characters: [], nextPage: 2),
-          isNot(const CharactersPageEntity(characters: [], nextPage: 3)),
+          const CharactersPageEntity(characters: [], totalCount: 1, nextPage: 2),
+          isNot(const CharactersPageEntity(characters: [], totalCount: 1, nextPage: 3)),
+        );
+      });
+
+      test('different totalCount → not equal', () {
+        expect(
+          const CharactersPageEntity(characters: [], totalCount: 1),
+          isNot(const CharactersPageEntity(characters: [], totalCount: 2)),
         );
       });
     });

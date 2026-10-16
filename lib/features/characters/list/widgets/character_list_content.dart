@@ -1,46 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rick_and_morty/core/widgets/portal_illustration.dart';
 import 'package:rick_and_morty/core/widgets/state_message.dart';
 import 'package:rick_and_morty/features/characters/failure_message.dart';
 import 'package:rick_and_morty/features/characters/list/bloc/characters_bloc.dart';
 import 'package:rick_and_morty/features/characters/list/widgets/character_list_footer.dart';
+import 'package:rick_and_morty/features/characters/list/widgets/character_list_skeleton.dart';
 import 'package:rick_and_morty/features/characters/list/widgets/character_sliver_items.dart';
 
 class CharacterListContent extends StatelessWidget {
-  const CharacterListContent({required this.state, super.key});
+  const CharacterListContent({
+    required this.state,
+    required this.entrance,
+    required this.onClearSearch,
+    super.key,
+  });
 
   final CharactersState state;
+  final Animation<double> entrance;
+  final VoidCallback onClearSearch;
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return switch (state) {
       CharactersState(status: CharactersStatus.initial || CharactersStatus.loading) =>
-        const SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(child: CircularProgressIndicator(semanticsLabel: 'Loading')),
-        ),
+        const CharacterListSkeleton(),
       CharactersState(status: CharactersStatus.failure, :final failure) => SliverFillRemaining(
         hasScrollBody: false,
         child: StateMessage(
-          icon: Icons.cloud_off_outlined,
-          title: failure?.message ?? 'Something went wrong.',
-          actionLabel: 'Retry',
-          onAction: () => context.read<CharactersBloc>().add(const CharactersRetried()),
+          illustration: PortalIllustration(
+            icon: Icons.priority_high_rounded,
+            color: colorScheme.error,
+            broken: true,
+          ),
+          title: failure?.title ?? 'Something went wrong',
+          message: failure?.message,
+          action: FilledButton.icon(
+            onPressed: () => context.read<CharactersBloc>().add(const CharactersRetried()),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try again'),
+          ),
         ),
       ),
-      CharactersState(characters: []) => const SliverFillRemaining(
+      CharactersState(characters: [], query: '') => SliverFillRemaining(
         hasScrollBody: false,
-        child: StateMessage(icon: Icons.search_off, title: 'No characters found'),
-      ),
-      CharactersState(:final characters, :final hasMore, :final nextPageStatus) => SliverSafeArea(
-        top: false,
-        sliver: SliverMainAxisGroup(
-          slivers: [
-            CharacterSliverItems(characters: characters),
-            if (hasMore) SliverToBoxAdapter(child: CharacterListFooter(status: nextPageStatus)),
-          ],
+        child: StateMessage(
+          illustration: PortalIllustration(
+            icon: Icons.search_off_rounded,
+            color: colorScheme.primary,
+          ),
+          title: 'No characters found',
         ),
       ),
+      CharactersState(characters: [], :final query) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: StateMessage(
+          illustration: PortalIllustration(icon: Icons.close_rounded, color: colorScheme.primary),
+          title: 'No one by that name',
+          message:
+              'Nothing matches “$query” in this dimension. '
+              'Check the spelling or try another name.',
+          action: OutlinedButton(onPressed: onClearSearch, child: const Text('Clear search')),
+        ),
+      ),
+      CharactersState(:final characters, :final query, :final hasMore, :final nextPageStatus) =>
+        SliverSafeArea(
+          top: false,
+          sliver: SliverMainAxisGroup(
+            slivers: [
+              CharacterSliverItems(characters: characters, query: query, entrance: entrance),
+              if (hasMore) SliverToBoxAdapter(child: CharacterListFooter(status: nextPageStatus)),
+            ],
+          ),
+        ),
     };
   }
 }

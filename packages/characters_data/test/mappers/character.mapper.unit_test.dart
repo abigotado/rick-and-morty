@@ -78,7 +78,7 @@ void main() {
       test('next url → nextPage is its page number', () {
         expect(
           CharacterMapper.toPageEntity(pageDto()),
-          CharactersPageEntity(characters: [rick], nextPage: 2),
+          CharactersPageEntity(characters: [rick], totalCount: 826, nextPage: 2),
         );
       });
 
@@ -95,10 +95,10 @@ void main() {
         expect(CharacterMapper.toPageEntity(pageDto(next: null)).nextPage, isNull);
       });
 
-      test('empty results on the last page → empty page', () {
+      test('empty results on the last page → no characters, count kept', () {
         expect(
           CharacterMapper.toPageEntity(pageDto(results: [], next: null)),
-          const CharactersPageEntity.empty(),
+          const CharactersPageEntity(characters: [], totalCount: 826),
         );
       });
 

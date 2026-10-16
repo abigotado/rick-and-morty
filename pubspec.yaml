@@ -33,3 +33,15 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/fonts/space_grotesk/OFL.txt
+  fonts:
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/space_grotesk/SpaceGrotesk-Regular.ttf
+        - asset: assets/fonts/space_grotesk/SpaceGrotesk-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/space_grotesk/SpaceGrotesk-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/space_grotesk/SpaceGrotesk-Bold.ttf
+          weight: 700

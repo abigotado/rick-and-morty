@@ -1,34 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:rick_and_morty/core/widgets/entrance.dart';
 
 class StateMessage extends StatelessWidget {
   const StateMessage({
-    required this.icon,
+    required this.illustration,
     required this.title,
-    this.actionLabel,
-    this.onAction,
+    this.message,
+    this.action,
     super.key,
   });
 
-  final IconData icon;
+  final Widget illustration;
   final String title;
-  final String? actionLabel;
-  final VoidCallback? onAction;
+  final String? message;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          spacing: 16,
-          children: [
-            Icon(icon, size: 56, color: theme.colorScheme.outline),
-            Text(title, textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
-            if (actionLabel case final label?)
-              FilledButton.tonal(onPressed: onAction, child: Text(label)),
-          ],
+    final textTheme = Theme.of(context).textTheme;
+    return FadeIn(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 64),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 20,
+              children: [
+                illustration,
+                Column(
+                  spacing: 8,
+                  children: [
+                    Text(title, textAlign: TextAlign.center, style: textTheme.headlineSmall),
+                    if (message case final message?)
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+                ?action,
+              ],
+            ),
+          ),
         ),
       ),
     );

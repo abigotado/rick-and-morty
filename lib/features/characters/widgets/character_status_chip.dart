@@ -6,36 +6,46 @@ class CharacterStatusChip extends StatelessWidget {
 
   final CharacterStatus status;
 
-  static const _aliveColor = Color(0xFF55B23B);
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final (label, color) = switch (status) {
-      CharacterStatus.alive => ('Alive', _aliveColor),
-      CharacterStatus.dead => ('Dead', theme.colorScheme.error),
-      CharacterStatus.unknown => ('Unknown', theme.colorScheme.outline),
+      CharacterStatus.alive => ('Alive', colorScheme.primary),
+      CharacterStatus.dead => ('Dead', colorScheme.error),
+      CharacterStatus.unknown => ('Unknown', colorScheme.outline),
     };
     return Semantics(
       label: 'Status: $label',
       excludeSemantics: true,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 6,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            child: const SizedBox.square(dimension: 8),
+      child: DecoratedBox(
+        decoration: ShapeDecoration(
+          color: color.withValues(alpha: 0.14),
+          shape: const StadiumBorder(),
+        ),
+        child: Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(7, 3, 9, 3),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 6,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: const SizedBox.square(dimension: 7),
+              ),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: Color.lerp(color, colorScheme.onSurface, 0.35),
+                  ),
+                ),
+              ),
+            ],
           ),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
