@@ -1,17 +1,21 @@
-# rick_and_morty
+# Rick and Morty
 
-Rick and Morty character catalog.
+A Flutter app to browse and search characters from the
+[Rick and Morty API](https://rickandmortyapi.com/documentation).
 
-## Getting Started
+## Getting started
 
-This project is a starting point for a Flutter application.
+The Flutter version is pinned in `.fvmrc` (use [FVM](https://fvm.app) or install that version).
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+fvm flutter pub get
+fvm flutter run
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Checks
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+fvm dart format --output=none --set-exit-if-changed lib test
+fvm flutter analyze
+fvm flutter test
+```
