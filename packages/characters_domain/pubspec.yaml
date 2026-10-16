@@ -1,0 +1,15 @@
+name: characters_domain
+description: Character entities, failures and the repository contract.
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace
+
+dependencies:
+  equatable: ^3.0.0
+
+dev_dependencies:
+  test: ^1.31.0
+  very_good_analysis: ^10.3.0

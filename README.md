@@ -14,8 +14,13 @@ fvm flutter run
 
 ## Checks
 
+The same checks CI runs:
+
 ```bash
-fvm dart format --output=none --set-exit-if-changed lib test
+(cd packages/rick_and_morty_api && fvm dart run build_runner build) && test -z "$(git status --porcelain)"
+find lib test packages -name '*.dart' ! -name '*.g.dart' ! -path '*/.dart_tool/*' -print0 \
+  | xargs -0 fvm dart format --output=none --set-exit-if-changed
 fvm flutter analyze
+(set -e; for package in packages/*/; do (cd "$package" && fvm dart test); done)
 fvm flutter test
 ```

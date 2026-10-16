@@ -1,11 +1,11 @@
 {
-    "name": "rick_and_morty",
-    "short_name": "rick_and_morty",
+    "name": "Rick and Morty",
+    "short_name": "Rick and Morty",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Rick and Morty character catalog.",
+    "background_color": "#97CE4C",
+    "theme_color": "#97CE4C",
+    "description": "Browse and search characters from the Rick and Morty universe.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
